@@ -9,8 +9,8 @@ var commentsSchema = new Schema({
   // `name` must be of type String
   // `name` must be unique, the default mongoose error message is thrown if a duplicate value is given
   comment: {
-    type: String,
-    unique: true
+    type: String
+    // unique: true
   },
   // `linker` is an array that stores ObjectIds
   // The ref property links these ObjectIds to the news model
