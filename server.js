@@ -6,7 +6,7 @@ const axios = require("axios");
 //most likely dont need this mongojs or body-parser
 const mongojs = require("mongojs");
 const bodyParser = require("body-parser");
-
+const Handlebars = require('handlebars')
 // Setting the Default Port for Express and Heroku
 const PORT = process.env.PORT || 8080;
 
@@ -32,6 +32,16 @@ app.set("view engine", "handlebars");
 // Make public a static folder
 app.use(express.static("public"));
 
+Handlebars.registerHelper('link', function(text, url) {
+    url = Handlebars.escapeExpression(text);
+    text = Handlebars.escapeExpression(text);
+  console.log(`URL: ${url}`)
+  console.log(`TEXT: + ${text}`)
+    return new Handlebars.SafeString(
+      "<a href='" + url + "'>" + text + "</a>"
+    );
+  });
+
 //When the server starts this will create and save a new Comments document to the database
 // The "unique" rule in the Comments model's schema will prevent duplicate comments from being added
 db.Comments.create({ comment: "user comments" })
@@ -47,8 +57,35 @@ db.Comments.create({ comment: "user comments" })
 // Routes
 // Main route
 app.get("/", function(req, res) {
-  res.render("index");
+  db.News.find({})
+  .sort({ date: -1})
+  .then(function(data){
+      res.render("index", {article: data})
+  })
 });
+
+app.get("/all", function(req, res){
+    db.News.find({}).then(function(data){
+        res.json(data)
+    })
+    
+})
+
+// Route for grabbing a specific Article by id, populate it with the comment
+app.get("/articles/:id", function(req, res) {
+    // Using the id passed in the id parameter, prepare a query that finds the matching one in our db...
+    db.News.findOne({ _id: req.params.id })
+      // ..and populate all of the notes associated with it
+      .populate("comments")
+      .then(function(dbArticle) {
+        // If we were able to successfully find an Article with the given id, send it back to the client
+        res.json(dbArticle);
+      })
+      .catch(function(err) {
+        // If an error occurred, send it to the client
+        res.json(err);
+      });
+  });
 
 //News scrape route
 app.get("/api/search", function(req, res) {
@@ -106,6 +143,26 @@ app.get("/api/search", function(req, res) {
   // Send a "Scrape Complete" message to the browser
   res.send("Scrape Complete");
 });
+
+app.post("/save/:id", function(req, res){
+    console.log("params id: " + req.params.id)
+    db.Comment.create(req.params.id)
+    .then(function(comments) {
+      // If a Note was created successfully, find one Article with an `_id` equal to `req.params.id`. Update the Article to be associated with the new Note
+      // { new: true } tells the query that we want it to return the updated User -- it returns the original by default
+      // Since our mongoose query returns a promise, we can chain another `.then` which receives the result of the query
+      return db.comments.findOneAndUpdate({ _id: req.params.id }, { note: comments._id }, { new: true });
+    })
+    .then(function(dbcomments) {
+      // If we were able to successfully update an Article, send it back to the client
+      res.json(dbcomments);
+    })
+    .catch(function(err) {
+      // If an error occurred, send it to the client
+      res.json(err);
+    });
+})
+
 
 app.listen(PORT, function() {
   console.log("App listening on PORT " + PORT);
