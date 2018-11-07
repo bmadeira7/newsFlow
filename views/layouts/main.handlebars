@@ -15,8 +15,6 @@
             border-radius: 30px;
             width: 95%;
             padding-left: 4%;
-
-
         }
 
         ol {
@@ -35,8 +33,6 @@
             color: red;
             font-size: 22px;
             text-shadow: 2px 2px 4px #000000;
-
-
         }
 
         .linkField {
@@ -54,6 +50,12 @@
         .jumbotron {
             background-color: ;
         }
+        .summary{
+            font-size: 18px;
+        }
+        .commentsContainer {
+            background-color: aliceblue;
+        }
     </style>
 </head>
 
@@ -66,8 +68,11 @@
                 <p class="lead">Find current news & leave a comment.</p>
             </div>
         </div>
+ <form action="/" method="GET">
+        <button class="btn btn-danger save mt-5 mb-0">Scrape for new articles
+        </button>
+    </form>
     </div>
-
 
     {{{ body }}}
 

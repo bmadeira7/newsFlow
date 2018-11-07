@@ -3,10 +3,12 @@ const exphbs = require("express-handlebars");
 const mongoose = require("mongoose");
 const cheerio = require("cheerio");
 const axios = require("axios");
+const Handlebars = require("handlebars");
+
 //most likely dont need this mongojs or body-parser
 const mongojs = require("mongojs");
 const bodyParser = require("body-parser");
-const Handlebars = require("handlebars");
+
 // Setting the Default Port for Express and Heroku
 const PORT = process.env.PORT || 8080;
 
@@ -85,7 +87,7 @@ app.get("/articles/:id", function(req, res) {
 });
 
 //News scrape route
-app.get("/api/search", function(req, res) {
+app.get("/", function(req, res) {
   axios
     .get("https://www.infowars.com/category/featured-stories/")
     .then(function(response) {
@@ -122,8 +124,9 @@ app.get("/api/search", function(req, res) {
               console.log(inserted);
             }
           }
-        );
+        )
       });
+      res.render('index',{articles:result});  
     });
 
   // Send a "Scrape Complete" message to the browser
@@ -132,7 +135,7 @@ app.get("/api/search", function(req, res) {
 
 app.post("/save/:id", function(req, res) {
   console.log("params id: " + req.params.id);
-  db.Comment.create(req.params.id)
+  db.Comments.create(req.params.id)
     .then(function(comments) {
       // If a Note was created successfully, find one Article with an `_id` equal to `req.params.id`. Update the Article to be associated with the new Note
       // { new: true } tells the query that we want it to return the updated User -- it returns the original by default
@@ -152,23 +155,28 @@ app.post("/save/:id", function(req, res) {
       res.json(err);
     });
 });
-
+app.get('/comments', function(req, res){
+    db.Comments.find().sort({ createdAt: -1 }).exec(function(err, data) { 
+      if(err) throw err;
+      res.render('comments',{comments:data});
+    });
+  });
+  
 app.post("/addcomment/:id", function(req, res) {
-  console.log("*" + req.body.comment);
-  db.Comment.create(
-    {
-      _id: req.params.id,
-      comment: req.body.comment
-    },
-    function(err) {
-      if (err) {
-        console.log(err);
-      } else {
-        console.log("New Comment Added");
-      }
-      res.redirect("/comments");
+  console.log("*" + req.params.id);
+  db.Comments.create({
+    article_id: req.params.id,
+    comment: req.body.comment
+
+  },function(err, docs){    
+    if(err){
+      console.log(err);     
+    } else {
+      console.log("New Comment Added");
     }
-  );
+    res.redirect('/comments');
+  });
+  
 });
 
 app.listen(PORT, function() {
